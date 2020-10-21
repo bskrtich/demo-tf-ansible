@@ -1,0 +1,7 @@
+# https://galaxy.ansible.com/docs/using/installing.html#installing-multiple-roles-from-a-file
+#
+# from galaxy
+- src: geerlingguy.docker
+- src: geerlingguy.firewall
+- src: geerlingguy.security
+- src: christiangda.amazon_cloudwatch_agent

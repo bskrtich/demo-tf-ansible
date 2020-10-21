@@ -1,0 +1,36 @@
+---
+
+- debug:
+    msg: "{{ env }}"
+
+- name: Deploy | Create folder for demo files
+  file:
+    path: /opt/demo
+    owner: deploy
+    group: deploy
+    mode: "0775"
+    state: directory
+
+- name: Deploy | Copy Compose file
+  copy:
+    src: ../docker-compose.{{ env }}.yml
+    dest: /opt/demo/docker-compose.{{ env }}.yml
+    owner: deploy
+    group: deploy
+    mode: "0664"
+
+- name: Deploy | Symlink Compose file
+  file:
+    src: /opt/demo/docker-compose.{{ env }}.yml
+    dest: /opt/demo/docker-compose.yml
+    owner: deploy
+    group: deploy
+    state: link
+
+- name: Deploy | Copy secrets env file to remote host
+  copy:
+    src: ../../../build/secrets/demo.{{ env }}.env
+    dest: "/opt/demo/demo.{{ env }}.env"
+    owner: deploy
+    group: deploy
+    mode: "0660"

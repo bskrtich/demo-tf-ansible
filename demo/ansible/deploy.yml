@@ -1,0 +1,45 @@
+---
+- name: Sunteck | Deploy demo
+  hosts: "*_demo"
+  gather_facts: yes
+  become: yes
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Deploy | Files
+      include_tasks: "tasks/deploy_files.yml"
+
+    - name: Deploy | Get ECR Login data from local host
+      become: no
+      command:
+        cmd: aws ecr get-login --no-include-email
+      delegate_to: 127.0.0.1
+      register: ecr_auth
+
+    - name: Deploy | ECR Login remote host
+      command:
+        cmd: "{{ ecr_auth.stdout }}"
+
+    - name: Deploy | Docker-compose pull
+      command:
+        cmd: /usr/local/bin/docker-compose pull
+      args:
+        chdir: /opt/demo
+
+    - name: Deploy | Docker-compose down
+      command:
+        cmd: /usr/local/bin/docker-compose down --volumes --remove-orphans
+      args:
+        chdir: /opt/demo/
+
+    - name: Deploy | Docker-compose up
+      command:
+        cmd: /usr/local/bin/docker-compose up --force-recreate --detach
+      args:
+        chdir: /opt/demo/
+
+    - name: Deploy | Prune docker system
+      command:
+        cmd: /usr/bin/docker system prune -af

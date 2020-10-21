@@ -1,0 +1,54 @@
+---
+  - name: Required packages
+    package:
+      name:
+        - curl # command line HTTP client
+        - htop # System information utility
+        - jq # JSON interpreter
+        - vim # The best file editor
+        - vim-editorconfig # .Editorconfig plugin for vim
+      state: latest
+
+  - name: Load 'aws_region' json data
+    uri:
+      url: http://169.254.169.254/latest/dynamic/instance-identity/document
+      return_content: yes
+    register: aws_region_json
+
+  - name: Set 'aws_region' to a fact
+    set_fact:
+      aws_region: "{{ aws_region_json.json | json_query('region') }}"
+
+  - name: Add AWS_REGION to enviroment file
+    lineinfile:
+      path: /etc/environment
+      regexp: '^AWS_REGION='
+      line: AWS_REGION={{aws_region}}
+
+  - name: Load 'instance_id' data
+    uri:
+      url: http://169.254.169.254/latest/meta-data/instance-id
+      return_content: yes
+    register: instance_id_data
+
+  - name: Set 'instance_id' to a fact
+    set_fact:
+      instance_id: "{{ instance_id_data.content }}"
+
+  - name: Add INSTANCE_ID to enviroment file
+    lineinfile:
+      path: /etc/environment
+      regexp: '^INSTANCE_ID='
+      line: INSTANCE_ID={{instance_id}}
+
+  - name: Add INSTANCE_ID_SUFFIX to enviroment file
+    lineinfile:
+      path: /etc/environment
+      regexp: '^INSTANCE_ID_SUFFIX='
+      line: INSTANCE_ID_SUFFIX={{instance_id[-10:]}}
+
+  - name: Remove the 'ubuntu' user
+    user:
+      name: ubuntu
+      state: absent
+      remove: yes

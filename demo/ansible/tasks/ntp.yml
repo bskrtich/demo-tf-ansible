@@ -1,0 +1,20 @@
+---
+- name: Install chrony for time sync
+  package:
+    name:
+      - chrony
+    state: latest
+
+- name: Configure chrony to point to internal AWS NTP server
+  lineinfile:
+    path: /etc/chrony/chrony.conf
+    regexp: '^server 169.254.169.123'
+    insertbefore: '^pool ntp.ubuntu.com'
+    line: 'server 169.254.169.123 prefer iburst'
+  register: chrony
+
+- name: Restart chrony
+  service:
+    name: chrony
+    state: restarted
+  when: chrony.changed

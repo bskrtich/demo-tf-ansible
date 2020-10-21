@@ -1,0 +1,64 @@
+---
+- name: Setup demo server
+  hosts: "*_demo"
+  gather_facts: yes
+  become: yes
+
+  vars_files:
+    - vars.yml
+
+  roles:
+    - role: geerlingguy.docker
+      vars:
+        docker_package_state: latest
+        docker_compose_path: /usr/local/bin/docker-compose
+        docker_install_compose: true
+        docker_users:
+          - "devops"
+
+    - role: geerlingguy.security
+      vars:
+        security_sudoers_passwordless:
+          - "devops"
+          - "deploy"
+        security_autoupdate_enabled: true
+        security_autoupdate_reboot: false
+
+    - role: geerlingguy.firewall
+      vars:
+        firewall_allowed_tcp_ports:
+          - 22
+        firewall_flush_rules_and_chains: false
+
+    - role: christiangda.amazon_cloudwatch_agent
+      vars:
+        cwa_agent_mode: "ec2"
+        cwa_conf_json_file_content: "{{ lookup('file', 'files/cloudwatch-agent.json') | from_json }}"
+
+  tasks:
+    - name: Include common tasks
+      include_tasks: "tasks/common.yml"
+
+    - name: Include deploy user
+      include_tasks: "tasks/user_deploy.yml"
+
+    - name: Include docker extras
+      include_tasks: "tasks/docker_extras.yml"
+
+    - name: Include NTP task
+      include_tasks: "tasks/ntp.yml"
+
+    - name: check for restart file
+      stat:
+        path: /var/run/reboot-required
+      register: restart_file
+
+    - name: trigger reboot if needed
+      when: restart_file.stat.exists == true
+      command: /bin/true
+      notify: reboot server
+
+  handlers:
+    - name: reboot server
+      reboot:
+        msg: "Reboting server via ansiable"

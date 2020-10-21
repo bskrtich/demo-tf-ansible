@@ -1,0 +1,15 @@
+version: '2.2'
+
+services:
+  services:
+    demo:
+      image: demo-project
+      ports:
+        - 80
+      restart: unless-stopped
+      logging:
+        driver: awslogs
+        options:
+          awslogs-region: us-west-1
+          awslogs-group: prod-demo
+          awslogs-stream: demo
